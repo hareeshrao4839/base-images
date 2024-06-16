@@ -2,7 +2,7 @@ FROM docker:26.1.1 as static-docker-source
 
 FROM alpine:3.20
 
-ENV CLOUD_SDK_VERSION=479.0.0
+ENV CLOUD_SDK_VERSION=480.0.0
 ENV PATH /google-cloud-sdk/bin:$PATH
 COPY --from=static-docker-source /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=static-docker-source /usr/local/libexec/docker/cli-plugins/docker-buildx /usr/local/libexec/docker/cli-plugins/docker-buildx
@@ -31,12 +31,13 @@ RUN ARCH=`cat /tmp/arch` && apk --no-cache upgrade && apk --no-cache add \
 RUN curl -L https://git.io/getLatestIstio | sh -  && cp /istio*/bin/istioctl /usr/local/bin/istioctl  && chmod +x /usr/local/bin/istioctl  && rm -rf /istio*.tar.gz  && rm -rf /istio*
 RUN git config --system credential.'https://source.developers.google.com'.helper gcloud.sh
 
-RUN apk del curl
+RUN apk del curl git 
 RUN rm -f /google-cloud-sdk/.install/.backup/platform/gsutil/third_party/google-auth-library-python/tests/data/es256_privatekey.pem \
         /google-cloud-sdk/.install/.backup/platform/gsutil/third_party/google-auth-library-python/tests/data/pem_from_pkcs12.pem \
         /google-cloud-sdk/.install/.backup/platform/gsutil/third_party/google-auth-library-python/tests/data/privatekey.pem \
         /google-cloud-sdk/-install/.backup/platform/gsutil/third_party/urllib3/dummyserver/certs/cacert.key \ 
         /google-cloud-sdk/.install/.backup/platform/gsutil/third_party/urllib3/dummyserver/certs/server.key \ 
+        /google-cloud-sdk/.install/.backup/platform/gsutil/third_party/urllib3/dummyserver/certs/cacert.key \
         /google-cloud-sdk/platform/gsutil/third_party/google-auth-library-python/tests/data/es256_privatekey.pem \
         /google-cloud-sdk/platform/gsutil/third_party/google-auth-library-python/tests/data/pem_from_pkcs12.pem \
         /google-cloud-sdk/platform/gsutil/third_party/google-auth-library-python/tests/data/privatekey.pem \
