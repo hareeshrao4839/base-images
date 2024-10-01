@@ -139,5 +139,9 @@ RUN set -eux; \
 		[ ! -e "/usr/local/bin/$dst" ]; \
 		ln -svT "$src" "/usr/local/bin/$dst"; \
 	done
-
+RUN set -eux; \
+	\
+	apk add --no-cache --virtual .build-deps \
+		build-base alpine-sdk traceroute bash busybox-extras 
+		
 CMD ["python3"]
