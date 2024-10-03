@@ -4,7 +4,7 @@ ENV PATH /usr/local/bin:$PATH
 
 ENV LANG C.UTF-8
 
-# runtime dependencies
+
 RUN set -eux; \
 	apk add --no-cache \
 		ca-certificates \
@@ -12,7 +12,7 @@ RUN set -eux; \
 	;
 
 ENV GPG_KEY A035C8C19219BA821ECEA86B64E628F8D684696D
-ENV PYTHON_VERSION 3.10.15
+ENV PYTHON_VERSION 3.11.10
 
 RUN set -eux; \
 	\

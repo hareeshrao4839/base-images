@@ -1,5 +1,4 @@
 FROM alpine:3.20
-
 ENV PATH /usr/local/bin:$PATH
 
 ENV LANG C.UTF-8
@@ -11,8 +10,8 @@ RUN set -eux; \
 		tzdata \
 	;
 
-ENV GPG_KEY A035C8C19219BA821ECEA86B64E628F8D684696D
-ENV PYTHON_VERSION 3.10.15
+ENV GPG_KEY 7169605F62C751356D054A26A821E680E5FA6305
+ENV PYTHON_VERSION 3.12.6
 
 RUN set -eux; \
 	\
@@ -107,14 +106,6 @@ RUN set -eux; \
 	\
 	export PYTHONDONTWRITEBYTECODE=1; \
 	python3 --version; \
-	\
-	pip3 install \
-		--disable-pip-version-check \
-		--no-cache-dir \
-		--no-compile \
-		'setuptools==65.5.1' \
-		wheel \
-	; \
 	pip3 --version
 
 RUN set -eux; \
@@ -124,9 +115,10 @@ RUN set -eux; \
 		[ ! -e "/usr/local/bin/$dst" ]; \
 		ln -svT "$src" "/usr/local/bin/$dst"; \
 	done
+
 RUN set -eux; \
 	\
 	apk add --no-cache --virtual .build-deps \
 		build-base alpine-sdk traceroute bash busybox-extras 
-		
+
 CMD ["python3"]
