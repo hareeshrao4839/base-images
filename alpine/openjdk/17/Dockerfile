@@ -7,3 +7,4 @@ ENV JAVA_HOME=/sr/lib/jvm/default-jvm \
 RUN apk update && apk upgrade && \
     apk add --no-cache openjdk17-jdk openssl bash busybox-extras && \
     java -version && openssl -version
+USER 1000
