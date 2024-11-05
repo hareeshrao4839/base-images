@@ -1,6 +1,6 @@
 FROM alpine:3.20
 
-LABEL maintainer="hareesh <hareesh.uk@gmail.com>"
+LABEL maintainer="hareesh"
 
 ENV NODE_VERSION 20.18.0
 
@@ -43,6 +43,7 @@ RUN apk update && \
         py-setuptools \
         bash \
         ca-certificates \
+        traceroute busybox-extras \
     # use pre-existing gpg directory, see https://github.com/nodejs/docker-node/pull/1895#issuecomment-1550389150
     && export GNUPGHOME="$(mktemp -d)" \
     # gpg keys listed at https://github.com/nodejs/node#release-keys
