@@ -1,7 +1,7 @@
 FROM alpine:3.20
 LABEL maintainer="hareesh <hareesh.uk4839@gmail.com>"
 
-ENV JAVA_HOME=/sr/lib/jvm/default-jvm \
+ENV JAVA_HOME=/usr/lib/jvm/default-jvm \
     PATH=${JAVA_HOME}/bin:$PATH \
     LANG='en_US.UTF-8' \
     LANGUAGE='en_US:en' \
