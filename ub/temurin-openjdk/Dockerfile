@@ -89,5 +89,6 @@ RUN set -eux; \
     echo "Complete."
 COPY --chmod=755 entrypoint.sh /__cacert_entrypoint.sh
 ENTRYPOINT ["/__cacert_entrypoint.sh"]
-
+RUN apt-get remove wget -y
+USER 1000
 CMD ["jshell"]
