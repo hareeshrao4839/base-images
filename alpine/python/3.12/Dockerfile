@@ -1,21 +1,19 @@
 FROM alpine:3.20
+LABEL maintainer="hareesh <hareesh.uk4839@gmail.com>"
+
 ENV PATH /usr/local/bin:$PATH
 
 ENV LANG C.UTF-8
 
-# runtime dependencies
-RUN set -eux; \
-	apk add --no-cache \
-		ca-certificates \
-		tzdata \
-	;
-
 ENV GPG_KEY 7169605F62C751356D054A26A821E680E5FA6305
-ENV PYTHON_VERSION 3.12.6
+ENV PYTHON_VERSION 3.12.7
+ENV PYTHON_SHA256 24887b92e2afd4a2ac602419ad4b596372f67ac9b077190f459aba390faf5550
 
 RUN set -eux; \
 	\
 	apk add --no-cache --virtual .build-deps \
+	    ca-certificates \
+	    tzdata \
 		gnupg \
 		tar \
 		xz \
@@ -23,7 +21,6 @@ RUN set -eux; \
 		bluez-dev \
 		bzip2-dev \
 		dpkg-dev dpkg \
-		expat-dev \
 		findutils \
 		gcc \
 		gdbm-dev \
@@ -43,10 +40,11 @@ RUN set -eux; \
 		tk-dev \
 		util-linux-dev \
 		xz-dev \
-		zlib-dev \
-	; \
-	\
+		zlib-dev
+RUN set -eux; \
+		\
 	wget -O python.tar.xz "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz"; \
+	echo "$PYTHON_SHA256 *python.tar.xz" | sha256sum -c -; \
 	wget -O python.tar.xz.asc "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz.asc"; \
 	GNUPGHOME="$(mktemp -d)"; export GNUPGHOME; \
 	gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$GPG_KEY"; \
@@ -62,11 +60,9 @@ RUN set -eux; \
 	./configure \
 		--build="$gnuArch" \
 		--enable-loadable-sqlite-extensions \
-		$(test "$gnuArch" != 'riscv64-linux-musl' && echo '--enable-optimizations') \
 		--enable-option-checking=fatal \
 		--enable-shared \
 		--with-lto \
-		--with-system-expat \
 		--with-ensurepip \
 	; \
 	nproc="$(nproc)"; \
@@ -75,19 +71,19 @@ RUN set -eux; \
 	make -j "$nproc" \
 		"EXTRA_CFLAGS=${EXTRA_CFLAGS:-}" \
 		"LDFLAGS=${LDFLAGS:-}" \
-		"PROFILE_TASK=${PROFILE_TASK:-}" \
 	; \
 	rm python; \
 	make -j "$nproc" \
 		"EXTRA_CFLAGS=${EXTRA_CFLAGS:-}" \
 		"LDFLAGS=${LDFLAGS:--Wl},-rpath='\$\$ORIGIN/../lib'" \
-		"PROFILE_TASK=${PROFILE_TASK:-}" \
 		python \
 	; \
 	make install; \
 	\
 	cd /; \
-	rm -rf /usr/src/python; \
+	rm -rf /usr/src/python;
+
+RUN set -eux; \
 	\
 	find /usr/local -depth \
 		\( \
@@ -108,6 +104,7 @@ RUN set -eux; \
 	python3 --version; \
 	pip3 --version
 
+# make some useful symlinks that are expected to exist ("/usr/local/bin/python" and friends)
 RUN set -eux; \
 	for src in idle3 pip3 pydoc3 python3 python3-config; do \
 		dst="$(echo "$src" | tr -d 3)"; \
@@ -115,10 +112,9 @@ RUN set -eux; \
 		[ ! -e "/usr/local/bin/$dst" ]; \
 		ln -svT "$src" "/usr/local/bin/$dst"; \
 	done
-
 RUN set -eux; \
 	\
 	apk add --no-cache --virtual .build-deps \
 		build-base alpine-sdk traceroute bash busybox-extras 
-
+USER 1000		
 CMD ["python3"]

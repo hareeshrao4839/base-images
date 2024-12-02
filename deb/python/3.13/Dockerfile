@@ -1,46 +1,43 @@
-FROM alpine:3.20
-LABEL maintainer="hareesh <hareesh.uk4839@gmail.com>"
+FROM debian:bookworm-slim
 
 ENV PATH /usr/local/bin:$PATH
 
-ENV LANG C.UTF-8
 
-ENV GPG_KEY A035C8C19219BA821ECEA86B64E628F8D684696D
-ENV PYTHON_VERSION 3.11.10
-ENV PYTHON_SHA256 07a4356e912900e61a15cb0949a06c4a05012e213ecd6b4e84d0f67aabbee372
+ENV GPG_KEY 7169605F62C751356D054A26A821E680E5FA6305
+ENV PYTHON_VERSION 3.13.0
+ENV PYTHON_SHA256 086de5882e3cb310d4dca48457522e2e48018ecd43da9cdf827f6a0759efb07d
 
 RUN set -eux; \
 	\
-	apk add --no-cache --virtual .build-deps \
+	aptMark="$(apt-mark showmanual)"; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
 	    ca-certificates \
-	    tzdata \
-		gnupg \
-		tar \
-		xz \
-		\
-		bluez-dev \
-		bzip2-dev \
-		dpkg-dev dpkg \
-		findutils \
+		netbase \
+		tzdata \
+		dpkg-dev \
 		gcc \
-		gdbm-dev \
-		libc-dev \
+		gnupg \
+		libbluetooth-dev \
+		libbz2-dev \
+		libc6-dev \
+		libdb-dev \
 		libffi-dev \
-		libnsl-dev \
-		libtirpc-dev \
-		linux-headers \
+		libgdbm-dev \
+		liblzma-dev \
+		libncursesw5-dev \
+		libreadline-dev \
+		libsqlite3-dev \
+		libssl-dev \
 		make \
-		ncurses-dev \
-		openssl-dev \
-		pax-utils \
-		readline-dev \
-		sqlite-dev \
-		tcl-dev \
-		tk \
 		tk-dev \
-		util-linux-dev \
-		xz-dev \
-		zlib-dev
+		uuid-dev \
+		wget \
+		xz-utils \
+		zlib1g-dev \
+		bash \
+		busybox \
+		traceroute 
 RUN set -eux; \
 		\
 	wget -O python.tar.xz "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz"; \
@@ -60,13 +57,15 @@ RUN set -eux; \
 	./configure \
 		--build="$gnuArch" \
 		--enable-loadable-sqlite-extensions \
+		--enable-optimizations \
 		--enable-option-checking=fatal \
 		--enable-shared \
 		--with-lto \
 		--with-ensurepip \
 	; \
 	nproc="$(nproc)"; \
-	EXTRA_CFLAGS="-DTHREAD_STACK_SIZE=0x100000"; \
+	EXTRA_CFLAGS="$(dpkg-buildflags --get CFLAGS)"; \
+	LDFLAGS="$(dpkg-buildflags --get LDFLAGS)"; \
 	LDFLAGS="${LDFLAGS:--Wl},--strip-all"; \
 	make -j "$nproc" \
 		"EXTRA_CFLAGS=${EXTRA_CFLAGS:-}" \
@@ -81,9 +80,7 @@ RUN set -eux; \
 	make install; \
 	\
 	cd /; \
-	rm -rf /usr/src/python;
-
-RUN set -eux; \
+	rm -rf /usr/src/python; \
 	\
 	find /usr/local -depth \
 		\( \
@@ -92,19 +89,27 @@ RUN set -eux; \
 		\) -exec rm -rf '{}' + \
 	; \
 	\
-	find /usr/local -type f -executable -not \( -name '*tkinter*' \) -exec scanelf --needed --nobanner --format '%n#p' '{}' ';' \
-		| tr ',' '\n' \
-		| sort -u \
-		| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-		| xargs -rt apk add --no-network --virtual .python-rundeps \
-	; \
-	apk del --no-network .build-deps; \
+	ldconfig;
+RUN set -eux; \
 	\
+	aptMark="$(apt-mark showmanual)"; \
+	apt-mark auto '.*' > /dev/null; \
+	apt-mark manual $aptMark; \
+	find /usr/local -type f -executable -not \( -name '*tkinter*' \) -exec ldd '{}' ';' \
+		| awk '/=>/ { so = $(NF-1); if (index(so, "/usr/local/") == 1) { next }; gsub("^/(usr/)?", "", so); printf "*%s\n", so }' \
+		| sort -u \
+		| xargs -r dpkg-query --search \
+		| cut -d: -f1 \
+		| sort -u \
+		| xargs -r apt-mark manual \
+	; \
+	# apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+	# rm -rf /var/lib/apt/lists/*; \
+	# \
 	export PYTHONDONTWRITEBYTECODE=1; \
 	python3 --version; \
 	pip3 --version
 
-# make some useful symlinks that are expected to exist ("/usr/local/bin/python" and friends)
 RUN set -eux; \
 	for src in idle3 pip3 pydoc3 python3 python3-config; do \
 		dst="$(echo "$src" | tr -d 3)"; \
@@ -112,9 +117,5 @@ RUN set -eux; \
 		[ ! -e "/usr/local/bin/$dst" ]; \
 		ln -svT "$src" "/usr/local/bin/$dst"; \
 	done
-RUN set -eux; \
-	\
-	apk add --no-cache --virtual .build-deps \
-		build-base alpine-sdk traceroute bash busybox-extras 
-USER 1000		
+USER 1000
 CMD ["python3"]

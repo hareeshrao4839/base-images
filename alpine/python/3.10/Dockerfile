@@ -1,22 +1,19 @@
 FROM alpine:3.20
+LABEL maintainer="hareesh <hareesh.uk4839@gmail.com>"
 
 ENV PATH /usr/local/bin:$PATH
 
 ENV LANG C.UTF-8
 
-# runtime dependencies
-RUN set -eux; \
-	apk add --no-cache \
-		ca-certificates \
-		tzdata \
-	;
-
 ENV GPG_KEY A035C8C19219BA821ECEA86B64E628F8D684696D
 ENV PYTHON_VERSION 3.10.15
+ENV PYTHON_SHA256 aab0950817735172601879872d937c1e4928a57c409ae02369ec3d91dccebe79
 
 RUN set -eux; \
 	\
 	apk add --no-cache --virtual .build-deps \
+	    ca-certificates \
+	    tzdata \
 		gnupg \
 		tar \
 		xz \
@@ -24,7 +21,6 @@ RUN set -eux; \
 		bluez-dev \
 		bzip2-dev \
 		dpkg-dev dpkg \
-		expat-dev \
 		findutils \
 		gcc \
 		gdbm-dev \
@@ -44,10 +40,11 @@ RUN set -eux; \
 		tk-dev \
 		util-linux-dev \
 		xz-dev \
-		zlib-dev \
-	; \
-	\
+		zlib-dev
+RUN set -eux; \
+		\
 	wget -O python.tar.xz "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz"; \
+	echo "$PYTHON_SHA256 *python.tar.xz" | sha256sum -c -; \
 	wget -O python.tar.xz.asc "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz.asc"; \
 	GNUPGHOME="$(mktemp -d)"; export GNUPGHOME; \
 	gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$GPG_KEY"; \
@@ -63,11 +60,9 @@ RUN set -eux; \
 	./configure \
 		--build="$gnuArch" \
 		--enable-loadable-sqlite-extensions \
-		$(test "$gnuArch" != 'riscv64-linux-musl' && echo '--enable-optimizations') \
 		--enable-option-checking=fatal \
 		--enable-shared \
 		--with-lto \
-		--with-system-expat \
 		--with-ensurepip \
 	; \
 	nproc="$(nproc)"; \
@@ -76,19 +71,19 @@ RUN set -eux; \
 	make -j "$nproc" \
 		"EXTRA_CFLAGS=${EXTRA_CFLAGS:-}" \
 		"LDFLAGS=${LDFLAGS:-}" \
-		"PROFILE_TASK=${PROFILE_TASK:-}" \
 	; \
 	rm python; \
 	make -j "$nproc" \
 		"EXTRA_CFLAGS=${EXTRA_CFLAGS:-}" \
 		"LDFLAGS=${LDFLAGS:--Wl},-rpath='\$\$ORIGIN/../lib'" \
-		"PROFILE_TASK=${PROFILE_TASK:-}" \
 		python \
 	; \
 	make install; \
 	\
 	cd /; \
-	rm -rf /usr/src/python; \
+	rm -rf /usr/src/python;
+
+RUN set -eux; \
 	\
 	find /usr/local -depth \
 		\( \
@@ -107,16 +102,9 @@ RUN set -eux; \
 	\
 	export PYTHONDONTWRITEBYTECODE=1; \
 	python3 --version; \
-	\
-	pip3 install \
-		--disable-pip-version-check \
-		--no-cache-dir \
-		--no-compile \
-		'setuptools==65.5.1' \
-		wheel \
-	; \
 	pip3 --version
 
+# make some useful symlinks that are expected to exist ("/usr/local/bin/python" and friends)
 RUN set -eux; \
 	for src in idle3 pip3 pydoc3 python3 python3-config; do \
 		dst="$(echo "$src" | tr -d 3)"; \
@@ -128,5 +116,5 @@ RUN set -eux; \
 	\
 	apk add --no-cache --virtual .build-deps \
 		build-base alpine-sdk traceroute bash busybox-extras 
-		
+USER 1000		
 CMD ["python3"]
