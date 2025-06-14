@@ -1,0 +1,25 @@
+FROM node:20.18.1-alpine3.21
+
+LABEL maintainer="hareesh"
+
+ENV NODE_VERSION=20.18.1 \
+    UID=1000 \
+    USER=app-user
+RUN     apk update && \
+        apk upgrade && \
+        apk add --no-cache \
+        bash \
+        ca-certificates \
+        traceroute \
+        busybox-extras \
+        curl
+
+# RUN adduser \
+#     --disabled-password \
+# 	--gecos "" \
+# 	--no-create-home \
+# 	--uid "$UID" \
+# 	-s "/bin/bash" \
+# 	$USER         
+USER 1000
+CMD [ "node" ]

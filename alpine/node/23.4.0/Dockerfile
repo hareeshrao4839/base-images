@@ -1,20 +1,32 @@
-FROM alpine:3.20
+FROM alpine:3.21
 
 LABEL maintainer="hareesh"
 
-ENV NODE_VERSION 22.11.0
+ENV NODE_VERSION 23.4.0
 
+RUN  apk add --no-cache --virtual .build-deps-full \
+        binutils-gold \
+        libstdc++ \
+        g++ \
+        gcc \
+        gnupg \
+        libgcc \
+        linux-headers \
+        make \
+        python3 \
+        py-setuptools \
+        bash \
+        ca-certificates \
+        traceroute \
+        busybox-extras \
+        curl 
 RUN apk update && \
     apk upgrade && \
     addgroup -g 1000 node \
     && adduser -u 1000 -G node -s /bin/sh -D node \
-    && apk add --no-cache \
-        libstdc++ \
-    && apk add --no-cache --virtual .build-deps \
-        curl \
     && ARCH= OPENSSL_ARCH='linux*' && alpineArch="$(apk --print-arch)" \
       && case "${alpineArch##*-}" in \
-        x86_64) ARCH='x64' CHECKSUM="95e9a410b7ce732705493cd44496c8e77ccb11516c75c2ef794f19a9943d178c" OPENSSL_ARCH=linux-x86_64;; \
+        x86_64) ARCH='x64' CHECKSUM="e1c590d8b6e8fcaa91bc42ad7a892e232eb1cfbfa139d64672da10e1b23ee95b" OPENSSL_ARCH=linux-x86_64;; \
         x86) OPENSSL_ARCH=linux-elf;; \
         aarch64) OPENSSL_ARCH=linux-aarch64;; \
         arm*) OPENSSL_ARCH=linux-armv4;; \
@@ -31,22 +43,7 @@ RUN apk update && \
   else \
     echo "Building from source" \
     # backup build
-    && apk add --no-cache --virtual .build-deps-full \
-        binutils-gold \
-        g++ \
-        gcc \
-        gnupg \
-        libgcc \
-        linux-headers \
-        make \
-        python3 \
-        py-setuptools \
-        bash \
-        ca-certificates \
-        traceroute busybox-extras \
-    # use pre-existing gpg directory, see https://github.com/nodejs/docker-node/pull/1895#issuecomment-1550389150
     && export GNUPGHOME="$(mktemp -d)" \
-    # gpg keys listed at https://github.com/nodejs/node#release-keys
     && for key in \
     C0D6248439F1D5604AAFFB4021D900FFDB233756 \
     DD792F5973C6DE52C432CBDAC77ABFA00DDBF2B7 \
@@ -71,7 +68,6 @@ RUN apk update && \
     && ./configure \
     && make -j$(getconf _NPROCESSORS_ONLN) V= \
     && make install \
-    && apk del .build-deps-full \
     && cd .. \
     && rm -Rf "node-v$NODE_VERSION" \
     && rm "node-v$NODE_VERSION.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt; \
@@ -79,10 +75,12 @@ RUN apk update && \
   && rm -f "node-v$NODE_VERSION-linux-$ARCH-musl.tar.xz" \
   # Remove unused OpenSSL headers to save ~34MB. See this NodeJS issue: https://github.com/nodejs/node/issues/46451
   && find /usr/local/include/node/openssl/archs -mindepth 1 -maxdepth 1 ! -name "$OPENSSL_ARCH" -exec rm -rf {} \; \
-  && apk del .build-deps \
+  # && apk del .build-deps \
   # smoke tests
   && node --version \
-  && npm --version && rm -rf /tmp/*
+  && npm --version \ 
+  && rm -rf /tmp/* 
+  # && apk del  .build-deps-full
 
 # ENV YARN_VERSION 1.22.22
 

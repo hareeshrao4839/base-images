@@ -1,4 +1,4 @@
-FROM alpine:3.20
+FROM alpine:3.21
 LABEL maintainer="hareesh <hareesh.uk4839@gmail.com>"
 
 ENV PATH /usr/local/bin:$PATH
@@ -6,8 +6,8 @@ ENV PATH /usr/local/bin:$PATH
 ENV LANG C.UTF-8
 
 ENV GPG_KEY 7169605F62C751356D054A26A821E680E5FA6305
-ENV PYTHON_VERSION 3.12.7
-ENV PYTHON_SHA256 24887b92e2afd4a2ac602419ad4b596372f67ac9b077190f459aba390faf5550
+ENV PYTHON_VERSION 3.12.8
+ENV PYTHON_SHA256 c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e
 
 RUN set -eux; \
 	\
@@ -40,7 +40,12 @@ RUN set -eux; \
 		tk-dev \
 		util-linux-dev \
 		xz-dev \
-		zlib-dev
+		zlib-dev \
+		build-base \
+		alpine-sdk \
+		traceroute \
+		bash \
+		busybox-extras 
 RUN set -eux; \
 		\
 	wget -O python.tar.xz "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz"; \
@@ -98,7 +103,7 @@ RUN set -eux; \
 		| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
 		| xargs -rt apk add --no-network --virtual .python-rundeps \
 	; \
-	apk del --no-network .build-deps; \
+	# apk del --no-network .build-deps; \
 	\
 	export PYTHONDONTWRITEBYTECODE=1; \
 	python3 --version; \
@@ -112,9 +117,18 @@ RUN set -eux; \
 		[ ! -e "/usr/local/bin/$dst" ]; \
 		ln -svT "$src" "/usr/local/bin/$dst"; \
 	done
-RUN set -eux; \
-	\
-	apk add --no-cache --virtual .build-deps \
-		build-base alpine-sdk traceroute bash busybox-extras 
+ENV UID=1000 \
+    USER=app-user
+RUN adduser \
+    --disabled-password \
+	--gecos "" \
+	--no-create-home \
+	--uid "$UID" \
+	-s "/bin/bash" \
+	$USER 	
+# RUN set -eux; \
+# 	\
+# 	apk add --no-cache --virtual .build-deps \
+# 		build-base alpine-sdk traceroute bash busybox-extras 
 USER 1000		
 CMD ["python3"]

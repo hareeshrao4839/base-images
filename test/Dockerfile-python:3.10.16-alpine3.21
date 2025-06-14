@@ -1,0 +1,56 @@
+FROM python:3.10.16-alpine3.21
+
+LABEL maintainer="hareesh"
+
+ENV PYTHON_VERSION=3.10.16 \
+    UID=1000 \
+    USER=app-user
+
+RUN set -eux; \
+	apk update ;\
+    apk upgrade ;\
+	apk add --no-cache \
+	    ca-certificates \
+	    tzdata \
+		gnupg \
+		xz \
+		\
+		bluez-dev \
+		bzip2-dev \
+		dpkg-dev dpkg \
+		findutils \
+		gcc \
+		gdbm-dev \
+		libc-dev \
+		libffi-dev \
+		libnsl-dev \
+		libtirpc-dev \
+		linux-headers \
+		ncurses-dev \
+		openssl-dev \
+		pax-utils \
+		readline-dev \
+		sqlite-dev \
+		tcl-dev \
+		tk \
+		tk-dev \
+		util-linux-dev \
+		xz-dev \
+		zlib-dev \
+		build-base \
+		alpine-sdk \
+		traceroute \
+		bash \
+		busybox-extras \
+		curl
+
+RUN adduser \
+    --disabled-password \
+	--gecos "" \
+	--no-create-home \
+	--uid "$UID" \
+	--shell "/bin/bash" \
+	$USER
+
+USER 1000
+CMD ["python3"]

@@ -3,11 +3,18 @@ FROM ubuntu:24.04
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH=$JAVA_HOME/bin:$PATH
 
-# Default to UTF-8 file.encoding
-ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
+ENV LANG='en_US.UTF-8' \
+    LANGUAGE='en_US:en' \
+    LC_ALL='en_US.UTF-8' \
+    JAVA_VERSION=jdk-17.0.13+11 \
+    GRADLE_HOME=/opt/gradle \
+    GRADLE_VERSION=7.6.4 \
+    UID=1010 \
+    USER=app-user
 
 RUN set -eux; \
     apt-get update; \
+    apt-get upgrade; \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         curl \
         wget \
@@ -18,16 +25,10 @@ RUN set -eux; \
         tzdata \
         locales \
         fonts-dejavu-core \
-        openssl \
-        bash \
-        busybox \
-        net-tools \
     ; \
     echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen; \
     locale-gen en_US.UTF-8; \
     rm -rf /var/lib/apt/lists/*
-
-ENV JAVA_VERSION=jdk-17.0.13+11
 
 RUN set -eux; \
     ARCH="$(dpkg --print-architecture)"; \
@@ -88,7 +89,76 @@ RUN set -eux; \
     echo "java --version"; java --version; \
     echo "Complete."
 COPY --chmod=755 entrypoint.sh /__cacert_entrypoint.sh
+RUN adduser \
+    --disabled-password \
+	--gecos "" \
+	--no-create-home \
+	--uid "$UID" \
+	--shell "/bin/bash" \
+	$USER && \
+  chmod 755 /__cacert_entrypoint.sh \
+  && apt-get remove wget -y 
+  # && rm -rf /var/cache/apt/archives /var/lib/apt/lists
 ENTRYPOINT ["/__cacert_entrypoint.sh"]
-RUN apt-get remove wget -y
-USER 1000
-CMD ["jshell"]
+
+### gradle installation
+RUN set -o errexit -o nounset \
+    && echo "Adding gradle user and group" \
+    && groupadd --system --gid 1020 gradle \
+    && useradd --system --gid gradle --uid 1020 --shell /bin/bash --create-home gradle \
+    && mkdir /home/gradle/.gradle \
+    && chown --recursive gradle:gradle /home/gradle \
+    && chmod --recursive o+rwx /home/gradle \
+    \
+    && echo "Symlinking root Gradle cache to gradle Gradle cache" \
+    && ln --symbolic /home/gradle/.gradle /root/.gradle
+
+VOLUME /home/gradle/.gradle
+
+WORKDIR /home/gradle
+
+RUN set -o errexit -o nounset \
+    && apt-get update \
+    && apt-get install --yes --no-install-recommends \
+        unzip \
+        wget \
+        \
+        bzr \
+        git \
+        git-lfs \
+        mercurial \
+        openssh-client \
+        subversion \
+    && rm --recursive --force /var/lib/apt/lists/* \
+    \
+    && echo "Testing VCSes" \
+    && which bzr \
+    && which git \
+    && which git-lfs \
+    && which hg \
+    && which svn
+
+ENV GRADLE_VERSION 7.6.4
+ARG GRADLE_DOWNLOAD_SHA256=bed1da33cca0f557ab13691c77f38bb67388119e4794d113e051039b80af9bb1
+RUN set -o errexit -o nounset \
+    && echo "Downloading Gradle" \
+    && wget --no-verbose --output-document=gradle.zip "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
+    \
+    && echo "Checking Gradle download hash" \
+    && echo "${GRADLE_DOWNLOAD_SHA256} *gradle.zip" | sha256sum --check - \
+    \
+    && echo "Installing Gradle" \
+    && unzip gradle.zip \
+    && rm gradle.zip \
+    && mv "gradle-${GRADLE_VERSION}" "${GRADLE_HOME}/" \
+    && ln --symbolic "${GRADLE_HOME}/bin/gradle" /usr/bin/gradle \
+    && apt-get remove wget unzip -y \
+    && rm -rf /var/cache/apt/archives /var/lib/apt/lists
+
+USER 1020
+
+RUN set -o errexit -o nounset \
+    && echo "Testing Gradle installation" \
+    && gradle --version
+
+CMD ["gradle"]

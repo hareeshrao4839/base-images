@@ -1,0 +1,34 @@
+FROM python:3.10.16-slim-bookworm
+LABEL maintainer="hareesh"
+
+ENV PYTHON_VERSION=3.11.11 \
+    UID=1000 \
+    USER=app-user
+
+RUN set -eux; \
+	\
+	apt-get update; \
+	apt-get upgrade; \
+	apt-get install -y --no-install-recommends \
+	    ca-certificates \
+		netbase \
+		tzdata \
+		dpkg-dev \
+		gcc \
+		gnupg \
+		bash \
+		traceroute \
+        net-tools \
+        dnsutils \
+        curl
+
+RUN adduser \
+    --disabled-password \
+	--gecos "" \
+	--no-create-home \
+	--uid "$UID" \
+	--shell "/bin/bash" \
+	$USER
+
+USER 1000
+CMD ["python3"]
