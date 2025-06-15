@@ -1,9 +1,3 @@
-#
-# NOTE: THIS DOCKERFILE IS GENERATED VIA "update.sh"
-#
-# PLEASE DO NOT EDIT IT DIRECTLY.
-#
-
 FROM alpine:3.22
 
 LABEL maintainer="hareesh <ch.hareeshrao4839@gmail.com>"
@@ -49,13 +43,13 @@ RUN set -x \
             set -x \
             && tempDir="$(mktemp -d)" \
             && chown nobody:nobody $tempDir \
-            && apk add --no-cache \
+            && apk --no-cache upgrade && apk --no-cache add \
             # && apk add --no-cache --virtual .build-deps \
-               binutils-gold \
-               libstdc++ \
-               g++ \
-               gnupg \
-               libgcc \
+                binutils-gold \
+                libstdc++ \
+                g++ \
+                gnupg \
+                libgcc \
                 gcc \
                 libc-dev \
                 make \
@@ -133,8 +127,27 @@ RUN sed -i 's,listen       80;,listen       8080;,' /etc/nginx/conf.d/default.co
     && chown -R $UID:0 /var/cache/nginx \
     && chmod -R g+w /var/cache/nginx \
     && chown -R $UID:0 /etc/nginx \
-    && chmod -R g+w /etc/nginx
-
+    && chmod -R g+w /etc/nginx && chmod -R 775 /run && chown -R $UID:0 /run 
+RUN apk --no-cache add  \
+    binutils-gold \
+    libstdc++ \
+    g++ \
+    gnupg \
+    libgcc \
+    gcc \
+    libc-dev \
+    make \
+    openssl-dev \
+    pcre2-dev \
+    zlib-dev \
+    linux-headers \
+    bash \
+    alpine-sdk \
+    findutils \
+    curl \
+    traceroute \
+    busybox-extras \
+    ca-certificates
 COPY docker-entrypoint.sh /
 COPY 10-listen-on-ipv6-by-default.sh /docker-entrypoint.d
 COPY 15-local-resolvers.envsh /docker-entrypoint.d
