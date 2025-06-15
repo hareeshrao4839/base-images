@@ -43,7 +43,12 @@ RUN rm -f /google-cloud-sdk/.install/.backup/platform/gsutil/third_party/google-
         /google-cloud-sdk/platform/gsutil/third_party/google-auth-library-python/tests/data/pem_from_pkcs12.pem \
         /google-cloud-sdk/platform/gsutil/third_party/google-auth-library-python/tests/data/privatekey.pem \
         /google-cloud-sdk/platform/gsutil/third_party/urllib3/dummyserver/certs/cacert.key \ 
-        /google-cloud-sdk/platform/gsutil/third_party/urllib3/dummyserver/certs/server.key
+        /google-cloud-sdk/platform/gsutil/third_party/urllib3/dummyserver/certs/server.key \
+        /google-cloud-sdk/platform/gsutil/third_party/requests/tests/certs/expired/ca/ca-private.key \
+        /google-cloud-sdk/platform/gsutil/third_party/requests/tests/certs/expired/server/server.key \
+        /google-cloud-sdk/platform/gsutil/third_party/requests/tests/certs/mtls/client/client.key \
+        /google-cloud-sdk/platform/gsutil/third_party/requests/tests/certs/valid/server/server.key
+
 # USER 1000
 VOLUME ["/root/.config"]
 

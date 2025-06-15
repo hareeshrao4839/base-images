@@ -1,8 +1,8 @@
-FROM docker:26.1.1 as static-docker-source
+FROM docker:28.2.2 as static-docker-source
 
-FROM alpine:3.20
+FROM alpine:3.22
 
-ENV CLOUD_SDK_VERSION=480.0.0
+ENV CLOUD_SDK_VERSION=526.0.0
 ENV PATH /google-cloud-sdk/bin:$PATH
 COPY --from=static-docker-source /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=static-docker-source /usr/local/libexec/docker/cli-plugins/docker-buildx /usr/local/libexec/docker/cli-plugins/docker-buildx
@@ -26,7 +26,7 @@ RUN ARCH=`cat /tmp/arch` && apk --no-cache upgrade && apk --no-cache add \
         gcloud config set core/disable_usage_reporting true && \
         gcloud config set component_manager/disable_update_check true && \
         gcloud config set metrics/environment github_docker_image && \
-        gcloud components install kubectl && \
+        gcloud components install kubectl istioctl terraform-tools kubectl-oidc && \
         gcloud --version && kubectl version --client 
 RUN curl -L https://git.io/getLatestIstio | sh -  && cp /istio*/bin/istioctl /usr/local/bin/istioctl  && chmod +x /usr/local/bin/istioctl  && rm -rf /istio*.tar.gz  && rm -rf /istio*
 RUN git config --system credential.'https://source.developers.google.com'.helper gcloud.sh
@@ -42,6 +42,10 @@ RUN rm -f /google-cloud-sdk/.install/.backup/platform/gsutil/third_party/google-
         /google-cloud-sdk/platform/gsutil/third_party/google-auth-library-python/tests/data/pem_from_pkcs12.pem \
         /google-cloud-sdk/platform/gsutil/third_party/google-auth-library-python/tests/data/privatekey.pem \
         /google-cloud-sdk/platform/gsutil/third_party/urllib3/dummyserver/certs/cacert.key \ 
-        /google-cloud-sdk/platform/gsutil/third_party/urllib3/dummyserver/certs/server.key
+        /google-cloud-sdk/platform/gsutil/third_party/urllib3/dummyserver/certs/server.key \
+        /google-cloud-sdk/platform/gsutil/third_party/requests/tests/certs/expired/ca/ca-private.key \
+        /google-cloud-sdk/platform/gsutil/third_party/requests/tests/certs/expired/server/server.key \
+        /google-cloud-sdk/platform/gsutil/third_party/requests/tests/certs/mtls/client/client.key \
+        /google-cloud-sdk/platform/gsutil/third_party/requests/tests/certs/valid/server/server.key
 USER 1000
 VOLUME ["/root/.config"]

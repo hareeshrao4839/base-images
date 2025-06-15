@@ -4,13 +4,13 @@
 # PLEASE DO NOT EDIT IT DIRECTLY.
 #
 
-FROM alpine:3.20
+FROM alpine:3.22
 
-LABEL maintainer="hareesh <hareesh.uk@gmail.com>"
+LABEL maintainer="hareesh <ch.hareeshrao4839@gmail.com>"
 
-ENV NGINX_VERSION=1.26.2
+ENV NGINX_VERSION=1.28.0
 ENV PKG_RELEASE=1
-ENV DYNPKG_RELEASE=2
+ENV DYNPKG_RELEASE=1
 
 ARG UID=101
 ARG GID=101
@@ -49,7 +49,13 @@ RUN set -x \
             set -x \
             && tempDir="$(mktemp -d)" \
             && chown nobody:nobody $tempDir \
-            && apk add --no-cache --virtual .build-deps \
+            && apk add --no-cache \
+            # && apk add --no-cache --virtual .build-deps \
+               binutils-gold \
+               libstdc++ \
+               g++ \
+               gnupg \
+               libgcc \
                 gcc \
                 libc-dev \
                 make \
@@ -61,6 +67,8 @@ RUN set -x \
                 alpine-sdk \
                 findutils \
                 curl \
+                traceroute \
+                busybox-extras \
                 ca-certificates \
             && su nobody -s /bin/sh -c " \
                 export HOME=${tempDir} \
@@ -81,7 +89,7 @@ RUN set -x \
                 && abuild-sign -k ${tempDir}/.abuild/abuild-key.rsa ${tempDir}/packages/alpine/${apkArch}/APKINDEX.tar.gz \
                 " \
             && cp ${tempDir}/.abuild/abuild-key.rsa.pub /etc/apk/keys/ \
-            && apk del --no-network .build-deps \
+            # && apk del --no-network .build-deps \
             && apk add -X ${tempDir}/packages/alpine/ --no-cache $nginxPackages \
             ;; \
     esac \
