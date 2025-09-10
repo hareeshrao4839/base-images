@@ -1,14 +1,14 @@
-FROM python:3.12.11-slim-bookworm
+FROM python:3.10.18-slim-bookworm
 LABEL maintainer="hareesh"
 
-ENV PYTHON_VERSION=3.12.11 \
+ENV PYTHON_VERSION=3.10.18 \
     UID=1000 \
     USER=appuser
 
 RUN set -eux; \
 	\
-	apt-get update -y; \
-	apt-get upgrade -y; \
+	apt-get update -y ; \
+	apt-get upgrade -y ; \
 	apt-get install -y --no-install-recommends \
 	    ca-certificates \
 		netbase \

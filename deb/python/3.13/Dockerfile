@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim
+FROM debian:12
 
 ENV PATH /usr/local/bin:$PATH
 

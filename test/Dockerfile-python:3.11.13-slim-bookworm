@@ -1,14 +1,14 @@
-FROM python:3.10.16-slim-bookworm
+FROM python:3.11.13-slim-bookworm
 LABEL maintainer="hareesh"
 
-ENV PYTHON_VERSION=3.11.11 \
+ENV PYTHON_VERSION=3.11.13 \
     UID=1000 \
-    USER=app-user
+    USER=appuser
 
 RUN set -eux; \
 	\
-	apt-get update; \
-	apt-get upgrade; \
+	apt-get update -y ; \
+	apt-get upgrade -y ; \
 	apt-get install -y --no-install-recommends \
 	    ca-certificates \
 		netbase \
@@ -19,7 +19,6 @@ RUN set -eux; \
 		bash \
 		traceroute \
         net-tools \
-        dnsutils \
         curl
 
 RUN adduser \
